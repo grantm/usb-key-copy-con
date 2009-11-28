@@ -1051,46 +1051,50 @@ be executable.  The application ignores the file extension if it is present.
 
 The C<new> method is used to create an application object.  It in turn calls
 C<BUILD> to create and populate the application window and hook into HAL (the
-Hardware abstraction layer) via DBus to get notifications of devices been
+Hardware Abstraction Layer) via DBus to get notifications of devices been
 added/removed.
 
-=head2 add_key_to_rack
+=head2 add_key_to_rack ( key_info )
 
 Called from C<hal_device_added> if the newly added device matches the current
-device filter settings.  A GUI widget representing the new USB key is added to
-the user interface and a data structure to track the copying process is
-created.
+device filter settings.  The C<key_info> parameter supplied is a hashref of
+device properties as returned by C<hal_device_properties>.  A GUI widget
+representing the new USB key is added to the user interface and a data
+structure to track the copying process is created.
 
-=head2 build_console
+=head2 build_console ( )
 
 Called from the constructor to create the scrolled text window for displaying
 progress messages.
 
-=head2 build_filters
+=head2 build_filters ( )
 
 Called from the constructor to create the toolbar of drop-down menus and text
 entries for the device filter settings.
 
-=head2 build_key_rack
+=head2 build_key_rack ( )
 
 Called from the constructor to create the container widget to house the
 per-key status indicators.
 
-=head2 build_menu
+=head2 build_menu ( )
 
 Called from the constructor to create the application menu and hook the menu
 items up to handler methods.
 
-=head2 clean_temp_dir
+=head2 clean_temp_dir ( )
 
 Called from the C<run> method immediately before the application exits.  This
 method is responsible for removing the temporary directories containing the
 master copy of the files and the mount points for the blank keys.
 
-=head2 confirm_master_dialog
+=head2 confirm_master_dialog ( key_info )
 
 This method is called each time a USB key is inserted when the application is
-in the C<MASTER-WAIT> state.  It displays a dialog box to allow the user to confirm that the device should be used as the master key.
+in the C<MASTER-WAIT> state.  The C<key_info> parameter supplied is a hashref
+of device properties as returned by C<hal_device_properties>.  this method
+displays a dialog box to allow the user to confirm that the device should be
+used as the master key.
 
 If the user selects 'Cancel', no further action is taken and the application
 goes back to waiting for a master key to be inserted.
@@ -1098,144 +1102,144 @@ goes back to waiting for a master key to be inserted.
 If the user confirms the device should be used as the master, then control is
 passed to the C<start_master_read> method.
 
-=head2 copy_finished
+=head2 copy_finished ( exit_status )
 
 Called when a 'writer' process exits.  Checks the exit status and updates the
-icon in the key rack.
+icon in the key rack (0 = success, non-zero = failure).
 
-=head2 disable_filter_inputs
+=head2 disable_filter_inputs ( )
 
 This method is called from C<require_master_key> to disable the menu and text
 entry widgets on the device filter toolbar.
 
-=head2 enable_filter_inputs
+=head2 enable_filter_inputs ( )
 
 This method is called from C<require_master_key> to enable the menu and text
 entry widgets on the device filter toolbar.
 
-=head2 fork_copier
+=head2 fork_copier ( key_info )
 
 Called from C<add_key_to_rack>.  Forks a 'writer' process and collects its
 STDOUT+STDERR via a pipe.
 
-=head2 get_volume_label
+=head2 get_volume_label ( device )
 
 Called from C<confirm_master_dialog> when collecting information about the key
 which was just inserted.  Current implementation simply runs the C<dosfslabel>
 command.
 
-=head2 hal_device_added
+=head2 hal_device_added ( udi )
 
 Called to handle a 'DeviceAdded' event from HAL via DBus.  Delegates to
 C<start_master_read> if the app is waiting for a master key.  Otherwise checks
 whether the new device parameters match the current filter settings and
 delegates to C<add_key_to_rack> if they do.
 
-=head2 hal_device_properties
+=head2 hal_device_properties ( udi )
 
 Called from C<hal_device_added> to query HAL.  Returns a hash(ref) of device
 details.  The global variable C<%hal_device_added> defines which attributes
 returned from HAL will appear in the hash and which keys they will be mapped
 to.
 
-=head2 hal_device_removed
+=head2 hal_device_removed ( udi )
 
 Called to handle a 'DeviceRemoved' event from HAL via DBus.  Delegates to
 C<remove_key_from_rack> if the application is in the C<COPYING> state.
 
-=head2 init_dbus_watcher
+=head2 init_dbus_watcher ( )
 
 Called from the constructor to hook up device-add events to the
 C<hal_device_added> method and device-remove events to C<hal_device_removed>.
 
-=head2 master_copy_finished
+=head2 master_copy_finished ( exit_status )
 
 Called when the 'reader' process exits.  Checks the exit status and updates the
 application state to <MASTER-COPIED> on success or C<MASTER-WAIT> on failure.
 
-=head2 match_device_filter
+=head2 match_device_filter ( key_info )
 
 Called from C<hal_device_added> and returns true if the device matches the
 current filter parameters, or false otherwise.
 
-=head2 on_copier_pipe_read
+=head2 on_copier_pipe_read ( fileno, condition, udi )
 
 Handler for data received from a 'writer' process.  Updates the status icon for
 the device to indicate progress.
 
-=head2 on_master_pipe_read
+=head2 on_master_pipe_read ( fileno, condition, udi )
 
 Handler for data received from the master key 'reader' process.  Copies output
 from the process to the console widget.
 
-=head2 on_menu_edit_preferences
+=head2 on_menu_edit_preferences ( )
 
 Handler for the Edit E<gt> Preferences menu item - not currently implemented.
 
-=head2 on_menu_file_new
+=head2 on_menu_file_new ( )
 
 Handler for the File E<gt> New menu item.  Resets the application state via
 C<require_master_key>.
 
-=head2 on_menu_file_quit
+=head2 on_menu_file_quit ( )
 
 Handler for the File E<gt> Quit menu item.  Exits the Gtk event loop, which
 returns control to the C<run> method.
 
-=head2 on_menu_help_about
+=head2 on_menu_help_about ( )
 
 Handler for the Help E<gt> About menu item.  Displays 'About' dialog.
 
-=head2 play_sound_file
+=head2 play_sound_file ( sound_file )
 
 This method takes a pathname to a sound file (e.g.: a .wav) and plays it.
 The current implementation simply runs the the SOX C<play> command - it should probably use GStreamer
 
-=head2 remove_key_from_rack
+=head2 remove_key_from_rack ( udi )
 
 Called from C<hal_device_removed> to remove the indicator widget corresponding
 to the USB key which has just been removed.
 
-=head2 require_master_key
+=head2 require_master_key ( )
 
 Called from the constructor to put the app in the C<MASTER-WAIT> mode (waiting
 for the master key to be inserted).  Can also be called from the
 C<on_menu_file_new> menu event handler.
 
-=head2 run
+=head2 run ( )
 
 This method is called from the wrapper script.  It's job is to run the Gtk
 event loop and when that exits, to call C<clean_temp_dir> and then return.
 
-=head2 say
+=head2 say ( message )
 
 Appends a message to the console widget.  (Note, the caller is responsible
 for supplying the newline characters).
 
-=head2 select_profile
+=head2 select_profile ( profile_name )
 
 This method is used to select which reader/writer scripts will be used.  At
 present there is one hard-coded call to this method in the constructor.
 Ideally, the user would select from all available profile scripts in the
 'confirm master' dialog.
 
-=head2 set_temp_root
+=head2 set_temp_root ( pathname )
 
 Called from C<confirm_master_dialog> based on the temp directory selected by
 the user.
 
-=head2 start_master_read
+=head2 start_master_read ( key_info )
 
 Called from C<hal_device_added> to fork off a 'reader' process to slurp in the
 contents of the master key.
 
-=head2 tick
+=head2 tick ( )
 
 This timer event handler is used to take the child process exit status values
 collected by the SIGCHLD handler and pass them to C<master_copy_finished> or
 C<copy_finished> as appropriate.
 
-=head2 update_key_progress
+=head2 update_key_progress ( udi, status )
 
 Called from C<on_copier_pipe_read> to update the status icon for a specified
 USB key device.  The progress parameter is a number in the range 0-10 for
