@@ -92,26 +92,26 @@ use File::Spec   qw();
 
 use Data::Dumper;
 
-has 'current_state'  => ( is => 'rw', isa => 'Str',  default => '' );
-has 'master_info'    => ( is => 'rw' );
-has 'options'        => ( is => 'rw', default => sub { {} } );
-has 'profiles'       => ( is => 'rw', default => sub { {} } );
+has 'current_state'    => ( is => 'rw', isa => 'Str',  default => '' );
+has 'master_info'      => ( is => 'rw' );
+has 'options'          => ( is => 'rw', default => sub { {} } );
+has 'profiles'         => ( is => 'rw', default => sub { {} } );
 has 'selected_profile' => ( is => 'rw', isa => 'Str',  default => '' );
-has 'temp_root'      => ( is => 'rw', isa => 'Str',  default => undef );
-has 'master_root'    => ( is => 'rw', isa => 'Str',  default => undef );
-has 'mount_dir'      => ( is => 'rw', isa => 'Str',  default => undef );
-has 'volume_label'   => ( is => 'rw', isa => 'Str',  default => '' );
-has 'selected_sound' => ( is => 'rw', isa => 'Str',  default => '' );
-has 'current_keys'   => ( is => 'ro', default => sub { {} } );
-has 'exit_status'    => ( is => 'ro', default => sub { {} } );
-has 'app_win'        => ( is => 'rw', isa => 'Gtk2::Window' );
-has 'key_rack'       => ( is => 'rw', isa => 'Gtk2::Container' );
-has 'console'        => ( is => 'rw', isa => 'Gtk2::TextView' );
-has 'vendor_combo'   => ( is => 'rw', isa => 'Gtk2::ComboBox' );
-has 'vendor_entry'   => ( is => 'rw', isa => 'Gtk2::Entry' );
-has 'capacity_combo' => ( is => 'rw', isa => 'Gtk2::ComboBox' );
-has 'capacity_entry' => ( is => 'rw', isa => 'Gtk2::Entry' );
-has 'hal'            => ( is => 'rw', isa => 'Net::DBus::RemoteObject' );
+has 'temp_root'        => ( is => 'rw', isa => 'Str',  default => undef );
+has 'master_root'      => ( is => 'rw', isa => 'Str',  default => undef );
+has 'mount_dir'        => ( is => 'rw', isa => 'Str',  default => undef );
+has 'volume_label'     => ( is => 'rw', isa => 'Str',  default => '' );
+has 'selected_sound'   => ( is => 'rw', isa => 'Str',  default => '' );
+has 'current_keys'     => ( is => 'ro', default => sub { {} } );
+has 'exit_status'      => ( is => 'ro', default => sub { {} } );
+has 'app_win'          => ( is => 'rw', isa => 'Gtk2::Window' );
+has 'key_rack'         => ( is => 'rw', isa => 'Gtk2::Container' );
+has 'console'          => ( is => 'rw', isa => 'Gtk2::TextView' );
+has 'vendor_combo'     => ( is => 'rw', isa => 'Gtk2::ComboBox' );
+has 'vendor_entry'     => ( is => 'rw', isa => 'Gtk2::Entry' );
+has 'capacity_combo'   => ( is => 'rw', isa => 'Gtk2::ComboBox' );
+has 'capacity_entry'   => ( is => 'rw', isa => 'Gtk2::Entry' );
+has 'hal'              => ( is => 'rw', isa => 'Net::DBus::RemoteObject' );
 
 
 
