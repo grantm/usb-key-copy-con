@@ -1,3 +1,9 @@
 Makefile
 blib
 pm_to_blib
+debian/libapp-usbkeycopycon-perl
+build-stamp
+install-stamp
+debian/files
+debian/libapp-usbkeycopycon-perl*debhelper*
+debian/libapp-usbkeycopycon-perl.substvars
