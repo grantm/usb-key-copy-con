@@ -15,6 +15,7 @@ WriteMakefile(
         'Net::DBus::GLib' => 0,
         'Test::More'      => 0,
     },
+    EXE_FILES           => [ qw(bin/usb-key-copy-con) ],
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'App-USBKeyCopyCon-*' },
 );
