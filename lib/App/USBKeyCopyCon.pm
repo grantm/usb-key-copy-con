@@ -94,6 +94,7 @@ use Data::Dumper;
 
 has 'current_state'  => ( is => 'rw', isa => 'Str',  default => '' );
 has 'master_info'    => ( is => 'rw' );
+has 'options'        => ( is => 'rw', default => sub { {} } );
 has 'temp_root'      => ( is => 'rw', isa => 'Str',  default => undef );
 has 'master_root'    => ( is => 'rw', isa => 'Str',  default => undef );
 has 'mount_dir'      => ( is => 'rw', isa => 'Str',  default => undef );
@@ -161,7 +162,7 @@ use constant CAPACITY_ANY      => 2;
 sub BUILD {
     my $self = shift;
 
-    die "This program must be run as root\n" if $> != 0;
+    $self->check_for_root_user;
 
     my($path) = __FILE__ =~ m{^(.*)[.]pm$};
     $path = File::Spec->rel2abs($path) . "/copy-complete.wav";
@@ -186,6 +187,23 @@ sub BUILD {
     $self->init_dbus_watcher;
 
     $self->require_master_key;
+}
+
+
+sub commandline_options {
+    my $class = shift;
+    return(
+        'help|?', '--no-root-check|n'
+    );
+}
+
+
+sub check_for_root_user {
+    my $self = shift;
+
+    return if $self->options->{'no-root-check'};
+
+    die "This program must be run as root\n" if $> != 0;
 }
 
 
@@ -990,6 +1008,11 @@ The path to the temp directory containing temporary mount points.
 
 The volume label read from the master key and to be applied to the copies.
 
+=item options
+
+A hash of option name/value pairs passed in from comman-line arguments by the
+wrapper script.
+
 =item reader_script
 
 The path to the profile script used to read the master key.
@@ -1087,6 +1110,11 @@ items up to handler methods.
 Called from the C<run> method immediately before the application exits.  This
 method is responsible for removing the temporary directories containing the
 master copy of the files and the mount points for the blank keys.
+
+=head2 commandline_options ( )
+
+This B<class> method returns a list of recognised options in the form expected
+by L<Getopt::Long>.
 
 =head2 confirm_master_dialog ( key_info )
 

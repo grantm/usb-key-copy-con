@@ -13,14 +13,14 @@ use App::USBKeyCopyCon;
 
 my(%opt);
 
-if(!GetOptions(\%opt, 'help|?')) {
+if(!GetOptions(\%opt, App::USBKeyCopyCon->commandline_options)) {
     pod2usage(-exitval => 1,  -verbose => 0);
 }
 
 pod2usage(-exitstatus => 0, -verbose => 2) if $opt{help};
 
 
-App::USBKeyCopyCon->new->run;
+App::USBKeyCopyCon->new(options => \%opt)->run;
 
 exit 0;
 
@@ -37,7 +37,8 @@ usb-key-copy-con - GUI console for copying USB flash drives
 
   Options:
 
-   -?     detailed help message
+   --no-root-check|n   skips the check for root permissions
+   -?                  detailed help message
 
 =head1 DESCRIPTION
 
@@ -101,6 +102,13 @@ and to enable it again, use this command:
 =head1 OPTIONS
 
 =over 4
+
+=item B<--no-root-check> (alias: -n)
+
+Normally the application will refuse to run unless it is executed with root
+permissions.  Use this option to skip this check.  With the default profile
+failure will occur later when attempting to mount filesystems but the option
+may be useful with a custom profile or with an appropriate sudo setup.
 
 =item B<-?>
 
