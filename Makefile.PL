@@ -9,7 +9,11 @@ WriteMakefile(
     ABSTRACT_FROM       => 'lib/App/USBKeyCopyCon.pm',
     PL_FILES            => {},
     PREREQ_PM => {
-        'Test::More' => 0,
+        'Moose'           => 0,
+        'Gtk2'            => 0,
+        'Net::DBus'       => 0,
+        'Net::DBus::GLib' => 0,
+        'Test::More'      => 0,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'App-USBKeyCopyCon-*' },
