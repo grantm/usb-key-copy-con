@@ -1207,6 +1207,12 @@ per-key status indicators.
 Called from the constructor to create the application menu and hook the menu
 items up to handler methods.
 
+=head2 check_for_root_user ( )
+
+Called on startup.  If the script is not running with root permissions and the
+C<--no-root-check> option was not specified, this method will die with an
+appropriate error message.
+
 =head2 clean_temp_dir ( )
 
 Called from the C<run> method immediately before the application exits.  This
