@@ -3,6 +3,9 @@ Revision history for App-USBKeyCopyCon
 1.01  2009-??-??
       - add command-line option parsing:
           --no-root-check to skip the check for root permissions
+          --profile-dir   to specify location of custom profile scripts
+          --profile       to select a profile
+      - add UI support for selecting an alternative copying profile
 
 1.00  2009-11-28
       - initial release

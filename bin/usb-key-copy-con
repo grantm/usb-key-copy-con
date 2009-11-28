@@ -37,8 +37,10 @@ usb-key-copy-con - GUI console for copying USB flash drives
 
   Options:
 
-   --no-root-check|n   skips the check for root permissions
-   -?                  detailed help message
+   --no-root-check|n       skip the check for root permissions
+   --profile|p <name>      specify the copying profile
+   --profile-dir|d <path>  directory where custom profile scripts live
+   --help|?                detailed help message
 
 =head1 DESCRIPTION
 
@@ -99,6 +101,7 @@ and to enable it again, use this command:
   gconftool-2 --type bool --set \
     /apps/nautilus/preferences/media_automount true
 
+
 =head1 OPTIONS
 
 =over 4
@@ -109,6 +112,16 @@ Normally the application will refuse to run unless it is executed with root
 permissions.  Use this option to skip this check.  With the default profile
 failure will occur later when attempting to mount filesystems but the option
 may be useful with a custom profile or with an appropriate sudo setup.
+
+=item B<< --profile <name> >>  (alias: -p)
+
+Specify the profile name for selecting reader/writer scripts.  The default
+profile name is 'copyfiles'.
+
+=item B<< --profile-dir <path> >>  (alias: -d)
+
+If your custom scripts are in a non-standard directory, use this option to add
+that directory to the list which will be scanned for profile scripts.
 
 =item B<-?>
 

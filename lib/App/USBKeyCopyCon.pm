@@ -95,12 +95,12 @@ use Data::Dumper;
 has 'current_state'  => ( is => 'rw', isa => 'Str',  default => '' );
 has 'master_info'    => ( is => 'rw' );
 has 'options'        => ( is => 'rw', default => sub { {} } );
+has 'profiles'       => ( is => 'rw', default => sub { {} } );
+has 'selected_profile' => ( is => 'rw', isa => 'Str',  default => '' );
 has 'temp_root'      => ( is => 'rw', isa => 'Str',  default => undef );
 has 'master_root'    => ( is => 'rw', isa => 'Str',  default => undef );
 has 'mount_dir'      => ( is => 'rw', isa => 'Str',  default => undef );
 has 'volume_label'   => ( is => 'rw', isa => 'Str',  default => '' );
-has 'reader_script'  => ( is => 'rw', isa => 'Str',  default => '' );
-has 'writer_script'  => ( is => 'rw', isa => 'Str',  default => '' );
 has 'selected_sound' => ( is => 'rw', isa => 'Str',  default => '' );
 has 'current_keys'   => ( is => 'ro', default => sub { {} } );
 has 'exit_status'    => ( is => 'ro', default => sub { {} } );
@@ -162,7 +162,10 @@ use constant CAPACITY_ANY      => 2;
 sub BUILD {
     my $self = shift;
 
+    $self->set_temp_root('/tmp');
     $self->check_for_root_user;
+    $self->scan_for_profiles;
+    $self->select_profile;
 
     my($path) = __FILE__ =~ m{^(.*)[.]pm$};
     $path = File::Spec->rel2abs($path) . "/copy-complete.wav";
@@ -193,8 +196,59 @@ sub BUILD {
 sub commandline_options {
     my $class = shift;
     return(
-        'help|?', '--no-root-check|n'
+        'help|?', '--no-root-check|n', '--profile|p=s', '--profile-dir|d=s'
     );
+}
+
+
+sub scan_for_profiles {
+    my $self = shift;
+
+    my($path) = File::Spec->rel2abs(__FILE__) =~ m{^(.*)[.]pm$};
+    my @profile_dirs = ($path . "/profiles");
+
+    if(my $custom = $self->options->{'profile-dir'}) {
+        push @profile_dirs, File::Spec->rel2abs($custom);
+    }
+
+    my $result = {};
+    foreach my $dir (@profile_dirs) {
+        foreach my $script (glob("$dir/*")) {
+            my($profile, $mode) = $script =~ m{^.*/([^/]+)-(reader|writer)[.]\w+$}
+                or next;
+            $result->{$profile}->{$mode} = $script;
+        }
+    }
+    die "Unable to locate any profile scripts" if not keys %$result;
+
+    $self->profiles($result);
+}
+
+
+sub select_profile {
+    my($self, $profile) = @_;
+
+    $profile ||= $self->options->{profile} || 'copyfiles';
+    if(not $self->profiles->{$profile}) {
+        die "Invalid profile name: '$profile'\n"
+            . "Known profiles: "
+            . join(', ', keys %{$self->profiles})
+            . "\n";
+    }
+    $self->selected_profile($profile);
+    my($path) = __FILE__ =~ m{^(.*)[.]pm$};
+}
+
+sub reader_script {
+    my($self) = @_;
+    my $profile = $self->profiles->{$self->selected_profile} or return;
+    return $profile->{reader};
+}
+
+sub writer_script {
+    my($self) = @_;
+    my $profile = $self->profiles->{$self->selected_profile} or return;
+    return $profile->{writer};
 }
 
 
@@ -232,6 +286,9 @@ sub init_dbus_watcher {
 sub require_master_key {
     my $self = shift;
 
+    if(not $self->reader_script) {
+        return $self->ready_to_write;
+    }
     $self->current_state('MASTER-WAIT');
     $self->disable_filter_inputs;
     $self->say("Waiting for USB master key ...\n");
@@ -270,8 +327,7 @@ sub hal_device_removed {
     my $state = $self->current_state;
     if($state eq 'MASTER-COPIED') {
         if($self->master_info->{udi} eq $target_udi) {
-            $self->say("Insert blank keys - copying will start automatically\n");
-            $self->current_state('COPYING');
+            $self->ready_to_write;
         }
     }
     elsif($state eq 'COPYING') {
@@ -280,6 +336,14 @@ sub hal_device_removed {
         }
         $self->remove_key_from_rack($target_udi);
     }
+}
+
+
+sub ready_to_write {
+    my($self) = @_;
+
+    $self->say("Insert blank keys - copying will start automatically\n");
+    $self->current_state('COPYING');
 }
 
 
@@ -365,7 +429,6 @@ sub start_master_read {
     my $pid = fork();
     if($pid == 0) {  # In the child
         sleep(2);
-        my $temp_dir = '/home/grant/projects/lca-ukd/tmp';
         $ENV{USB_BLOCK_DEVICE} = $key_info->{block_device};
         $ENV{USB_MOUNT_DIR}    = $self->mount_dir . "/$key_info->{dev}";
         $ENV{USB_MASTER_ROOT}  = $self->master_root;
@@ -438,7 +501,6 @@ sub fork_copier {
     my $pid = fork();
     if($pid == 0) {  # In the child
         sleep(2);
-        my $temp_dir = '/home/grant/projects/lca-ukd/tmp';
         $ENV{USB_BLOCK_DEVICE} = $key_info->{block_device};
         $ENV{USB_MOUNT_DIR}    = $self->mount_dir . "/$key_info->{dev}";
         $ENV{USB_MASTER_ROOT}  = $self->master_root;
@@ -756,18 +818,30 @@ sub confirm_master_dialog {
     $t_label->set_alignment(0, 0.5);
     $table->attach($t_label, 0, 1, $row, $row + 1, @pack_opts);
 
-    my $t_value = Gtk2::Label->new("/tmp");
-    $t_value->set_alignment(0, 0.5);
-    $table->attach($t_value, 1, 2, $row, $row + 1, @pack_opts);
-
     my $t_chooser = Gtk2::FileChooserButton->new(
         'Select a folder', 'select-folder'
     );
-    $t_chooser->set_filename('/tmp');
-    $t_chooser->signal_connect('file-set',
-        sub { $t_value->set_text( $t_chooser->get_filename ) }
-    );
-    $table->attach($t_chooser, 2, 3, $row, $row + 1, @pack_opts);
+    $t_chooser->set_filename('/tmp');  # TODO fixme!
+    $table->attach($t_chooser, 1, 2, $row, $row + 1, @pack_opts);
+    $row++;
+
+    my $p_label = Gtk2::Label->new;
+    $p_label->set_markup('<b>Copying Profile:</b>');
+    $p_label->set_alignment(0, 0.5);
+    $table->attach($p_label, 0, 1, $row, $row + 1, @pack_opts);
+
+    my $profile_combo = Gtk2::ComboBox->new_text;
+    my $profiles = $self->profiles;
+    my $selected = $self->selected_profile;
+    my @profile_names = sort  keys %$profiles;
+    my $i = 0;
+    foreach my $key (@profile_names) {
+        next unless $profiles->{$key}->{reader};
+        $profile_combo->append_text($key);
+        $profile_combo->set_active($i) if $key eq $selected;
+        $i++;
+    }
+    $table->attach($profile_combo, 1, 2, $row, $row + 1, @pack_opts);
     $row++;
 
     $table->show_all;
@@ -784,25 +858,9 @@ sub confirm_master_dialog {
 
     $self->set_temp_root($temp_root);
     $self->volume_label($volume_label);
-    $self->select_profile('copyfiles');
+    $self->select_profile($profile_names[$profile_combo->get_active]);
 
     return TRUE;
-}
-
-
-sub select_profile {
-    my($self, $profile) = @_;
-
-    my($path) = __FILE__ =~ m{^(.*)[.]pm$};
-    $path = File::Spec->rel2abs($path) . "/profiles";
-
-    my($reader) = glob("$path/$profile-reader*")
-        or die "Can't find reader script for profile '$profile' in $path";
-    $self->reader_script($reader);
-
-    my($writer) = glob("$path/$profile-writer*")
-        or die "Can't find writer script for profile '$profile' in $path";
-    $self->writer_script($writer);
 }
 
 
@@ -892,6 +950,8 @@ sub copy_finished {
 
 sub set_temp_root {
     my($self, $new_temp) = @_;
+
+    $self->clean_temp_dir;
 
     $self->temp_root($new_temp);
     my $temp_dir = "$new_temp/usb-copy.$$";
@@ -1013,9 +1073,15 @@ The volume label read from the master key and to be applied to the copies.
 A hash of option name/value pairs passed in from comman-line arguments by the
 wrapper script.
 
-=item reader_script
+=item profiles
 
-The path to the profile script used to read the master key.
+A hash of details of known profiles.  Used to populate the profile drop-down
+menu on the confirm master key dialog.
+
+=item selected_profile
+
+The name of the copying profile which will be used to select reader/writer
+scripts.
 
 =item selected_sound
 
@@ -1037,33 +1103,31 @@ The Gtk2::Entry object for the device filter 'Vendor' text entry box.
 
 =item volume_label
 
-=item writer_script
-
-The path to the profile script used to write to the blank keys.
+The volume label which will be passed to the writer script.
 
 =back
 
 =head1 PROFILES
 
 The tasks of reading a master key and writing to a blank key are delegated to
-'reader' and 'writer' scripts.  A pair of reader/writer scripts is supplied
-but the application is designed to support using different scripts as
-dictated by a user selection.  The supplied script assume file-by-file copying
-and format the blank keys with a VFAT filesystem.  An alternate profile might
-use C<dd> to write a complete filesystem in a single operation.
+'reader' and 'writer' scripts.  A pair of reader/writer scripts is supplied but
+the application also supports using different scripts as dictated by a user
+selection.  The supplied scripts assume file-by-file copying and format the
+blank keys with a VFAT filesystem.  An alternate script might for example, use
+C<dd> to write a complete filesystem image in a single operation.
 
-A pair of scripts is referred to as a copying 'profile'.  The C<select_profile>
-method can be used to instruct the application to use a specific pair of
-scripts.
+A pair of scripts is referred to as a copying 'profile'.  The user can select a
+profile via a command-line option or from a drop-down list when confirming the
+master key.
 
 The supplied scripts are called:
 
   copyfiles-reader.sh
   copyfiles-writer.sh
 
-The default constructor selects this profile with the call:
-
-  $self->select_profile('copyfiles');
+A profile does not need to include a reader script.  If a profile which only
+includes a writer script is selected (via the command-line options) then the
+application will go immediately into the mode of waiting for blank keys.
 
 The reader/writer scripts do not have to be shell scripts - they merely need to
 be executable.  The application ignores the file extension if it is present.
@@ -1223,6 +1287,18 @@ Handler for the Help E<gt> About menu item.  Displays 'About' dialog.
 This method takes a pathname to a sound file (e.g.: a .wav) and plays it.
 The current implementation simply runs the the SOX C<play> command - it should probably use GStreamer
 
+=head2 reader_script ( )
+
+Returns the path to the script from the currently selected profile, which will
+be used to read the master key.  Will return undef if the selected profile does
+not include a reader script.
+
+=head2 ready_to_write ( )
+
+This method is called after the master key has been read (or immediately on
+startup if the selected profile does not use a reader script) and puts the
+application into the mode of waiting for blank keys to be inserted.
+
 =head2 remove_key_from_rack ( udi )
 
 Called from C<hal_device_removed> to remove the indicator widget corresponding
@@ -1243,6 +1319,10 @@ event loop and when that exits, to call C<clean_temp_dir> and then return.
 
 Appends a message to the console widget.  (Note, the caller is responsible
 for supplying the newline characters).
+
+=head2 scan_for_profiles ( )
+
+Populates the hash of profile data in the C<profiles> attribute.
 
 =head2 select_profile ( profile_name )
 
@@ -1274,6 +1354,11 @@ USB key device.  The progress parameter is a number in the range 0-10 for
 copies in progress; -1 for a copy that has failed (non-zero exit status from
 the 'writer' process); or -2 to indicate a device which did not match the
 filter settings and is being ignored.
+
+=head2 writer_script ( )
+
+Returns the path to the script from the currently selected profile, which will
+be used to write to the blank keys.
 
 =cut
 
