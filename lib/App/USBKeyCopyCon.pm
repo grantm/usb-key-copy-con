@@ -1129,8 +1129,46 @@ A profile does not need to include a reader script.  If a profile which only
 includes a writer script is selected (via the command-line options) then the
 application will go immediately into the mode of waiting for blank keys.
 
+=head2 Profile Script API
+
+The filename of the reader script must end with C<-reader> (followed by an
+optional extension) and similarly, the filename of the writer script must end
+with C<-writer>.
+
 The reader/writer scripts do not have to be shell scripts - they merely need to
 be executable.  The application ignores the file extension if it is present.
+
+Both reader and writer scripts are assumed to have succeeded if they have an
+exit status of 0.  A non-zero exit status will be considered a failure.
+
+When the master key reader script is invoked, the following environment
+variables will be set:
+
+  USB_BLOCK_DEVICE    e.g.: /dev/sdb
+  USB_MOUNT_DIR       e.g.: /tmp/usb-copy.nnnnn/mount/sdb
+  USB_MASTER_ROOT     e.g.: /tmp/usb-copy.nnnnn/master
+
+The writer script will be passed the same set of variables and one extra:
+
+  USB_VOLUME_NAME     e.g.: FREE-STUFF
+
+Be warned that this variable may be empty - depending on what was returned from
+running C<dosfslabel> against the master key.  It is entirely reasonable for a
+custom writer script to ignore this variable altogether and either use a
+hardcoded volume label or not use one at all.
+
+The writer script can also indicate progress (for updating the progress bar in
+the icon) by writing lines to STDOUT in the following format:
+
+  {x/y}
+
+Where '{'  is the first character on a line; 'x' is an integer indicating the
+number of steps completed; and 'y' is an integer indicating the total number
+of steps. For example if the script output this line:
+
+  {4/8}
+
+the status icon would be updated to indicate 50% complete.
 
 =head1 METHODS
 

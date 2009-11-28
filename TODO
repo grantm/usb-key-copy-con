@@ -1,4 +1,3 @@
-- document ENV vars passed to profile scripts
 - add command-line option handling:
   --use-sudo
 - implement Edit > Preferences
