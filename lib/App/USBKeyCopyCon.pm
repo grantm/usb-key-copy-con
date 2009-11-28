@@ -162,8 +162,8 @@ use constant CAPACITY_ANY      => 2;
 sub BUILD {
     my $self = shift;
 
-    $self->set_temp_root('/tmp');
     $self->check_for_root_user;
+    $self->set_temp_root('/tmp');
     $self->scan_for_profiles;
     $self->select_profile;
 
