@@ -171,21 +171,7 @@ sub BUILD {
     $path = File::Spec->rel2abs($path) . "/copy-complete.wav";
     $self->selected_sound($path);
 
-    my $window = Gtk2::Window->new;
-    $self->app_win($window);
-    $window->signal_connect(destroy => sub { Gtk2->main_quit; });
-    $window->set_title('USB Key Copying Console');
-    $window->set_default_size(850, 250);
-
-    my $vbox = Gtk2::VBox->new(FALSE);
-    $vbox->pack_start($self->build_menu,     FALSE, FALSE, 0);
-    $vbox->pack_start($self->build_filters,  FALSE, FALSE, 0);
-    $vbox->pack_start(Gtk2::HSeparator->new, FALSE, TRUE,  0);
-    $vbox->pack_start($self->build_key_rack, FALSE, FALSE, 0);
-    $vbox->pack_start($self->build_console,  TRUE,  TRUE,  0);
-    $window->add($vbox);
-
-    $window->show_all;
+    $self->build_ui;
 
     $self->init_dbus_watcher;
 
@@ -258,6 +244,27 @@ sub check_for_root_user {
     return if $self->options->{'no-root-check'};
 
     die "This program must be run as root\n" if $> != 0;
+}
+
+
+sub build_ui {
+    my $self = shift;
+
+    my $window = Gtk2::Window->new;
+    $self->app_win($window);
+    $window->signal_connect(destroy => sub { Gtk2->main_quit; });
+    $window->set_title('USB Key Copying Console');
+    $window->set_default_size(850, 250);
+
+    my $vbox = Gtk2::VBox->new(FALSE);
+    $vbox->pack_start($self->build_menu,     FALSE, FALSE, 0);
+    $vbox->pack_start($self->build_filters,  FALSE, FALSE, 0);
+    $vbox->pack_start(Gtk2::HSeparator->new, FALSE, TRUE,  0);
+    $vbox->pack_start($self->build_key_rack, FALSE, FALSE, 0);
+    $vbox->pack_start($self->build_console,  TRUE,  TRUE,  0);
+    $window->add($vbox);
+
+    $window->show_all;
 }
 
 
@@ -1189,23 +1196,28 @@ structure to track the copying process is created.
 
 =head2 build_console ( )
 
-Called from the constructor to create the scrolled text window for displaying
+Called from C<build_ui> to create the scrolled text window for displaying
 progress messages.
 
 =head2 build_filters ( )
 
-Called from the constructor to create the toolbar of drop-down menus and text
+Called from C<build_ui> to create the toolbar of drop-down menus and text
 entries for the device filter settings.
 
 =head2 build_key_rack ( )
 
-Called from the constructor to create the container widget to house the
+Called from C<build_ui> to create the container widget to house the
 per-key status indicators.
 
 =head2 build_menu ( )
 
-Called from the constructor to create the application menu and hook the menu
+Called from C<build_ui> to create the application menu and hook the menu
 items up to handler methods.
+
+=head2 build_ui ( )
+
+Called from the constructor to create the main application window and populate
+it with Gtk widgets.
 
 =head2 check_for_root_user ( )
 
