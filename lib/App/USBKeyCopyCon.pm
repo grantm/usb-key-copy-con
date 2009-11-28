@@ -1271,6 +1271,10 @@ You can also look for information at:
 
 =over 4
 
+=item * github: source code repository
+
+L<http://github.com/grantm/usb-key-copy-con>
+
 =item * RT: CPAN's request tracker
 
 L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=App-USBKeyCopyCon>
