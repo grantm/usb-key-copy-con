@@ -396,6 +396,7 @@ sub ready_to_write {
     my($self) = @_;
 
     $self->say("Insert blank keys - copying will start automatically\n");
+    $self->enable_filter_inputs;
     $self->current_state('COPYING');
 }
 
