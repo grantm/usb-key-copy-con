@@ -1037,7 +1037,7 @@ sub clean_temp_dir {
 
     my $path = $self->master_root or return;
     $path =~ s{/master$}{};
-    if(-d $path  and  $self->sudo_path) {
+    if(-d $path and $self->sudo_path and $self->current_state ne 'MASTER-WAIT') {
         my $command = $self->sudo_wrap("chown -R $< $path");
         system($command);
     }
