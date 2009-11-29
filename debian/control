@@ -9,7 +9,7 @@ Homepage: http://search.cpan.org/dist/App-USBKeyCopyCon/
 
 Package: libapp-usbkeycopycon-perl
 Architecture: all
-Depends: ${perl:Depends}, ${misc:Depends}, libmoose-perl, libgtk2-perl, libnet-dbus-perl, libnet-dbus-glib-perl, dosfstools, sox
+Depends: ${perl:Depends}, ${misc:Depends}, libmoose-perl, libgtk2-perl, libnet-dbus-perl, libnet-dbus-glib-perl, dosfstools, sox, gksu
 Description:  GUI console for bulk copying of USB keys
  App::USBKeyCopyCon is a GUI application for bulk copying USB flash
  drives (storage devices). The application was developed to run on Linux and

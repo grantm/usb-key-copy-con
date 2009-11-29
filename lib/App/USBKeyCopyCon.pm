@@ -93,6 +93,7 @@ use File::Spec   qw();
 use Data::Dumper;
 
 has 'current_state'    => ( is => 'rw', isa => 'Str',  default => '' );
+has 'sudo_path'        => ( is => 'rw', isa => 'Str',  default => '' );
 has 'master_info'      => ( is => 'rw' );
 has 'options'          => ( is => 'rw', default => sub { {} } );
 has 'profiles'         => ( is => 'rw', default => sub { {} } );
@@ -162,6 +163,7 @@ use constant CAPACITY_ANY      => 2;
 sub BUILD {
     my $self = shift;
 
+    $self->process_options($self->options);
     $self->check_for_root_user;
     $self->set_temp_root('/tmp');
     $self->scan_for_profiles;
@@ -179,10 +181,54 @@ sub BUILD {
 }
 
 
+sub process_options {
+    my($self, $opt) = @_;
+
+    if($opt->{'use-sudo'}) {
+        my $path = $self->find_command('gksudo') || $self->find_command('sudo');
+        if($path) {
+            $self->sudo_path($path);
+            $opt->{'no-root-check'} = 1;
+        }
+    }
+}
+
+
+sub sudo_wrap {
+    my($self, $command, @env_vars) = @_;
+
+    my $sudo = $self->sudo_path or return $command;
+
+    if($sudo =~ /gksudo/) {
+        my $msg = "The application 'usb-key-copy-con' requires administrative "
+                . "privileges to access USB flash drives";
+        return qq{$sudo --preserve-env --message "$msg" "$command"};
+    }
+
+    my $env = join '', map { qq($_="$ENV{$_}" ) } @env_vars;
+    return qq{$sudo $env $command}
+}
+
+
+sub find_command {
+    my($self, $command) = @_;
+
+    foreach my $dir (split /:/, $ENV{PATH}) {
+        my $path = "$dir/$command";
+        return $path if -x $path;
+    }
+    return;
+}
+
+
 sub commandline_options {
     my $class = shift;
     return(
-        'help|?', '--no-root-check|n', '--profile|p=s', '--profile-dir|d=s'
+        'help|?',
+        '--use-sudo|s',
+        '--no-root-check|n',
+        '--profile|p=s',
+        '--profile-dir|d=s'
     );
 }
 
@@ -432,6 +478,8 @@ sub start_master_read {
     $self->capacity_combo->set_active(CAPACITY_EXACT);
     $self->capacity_entry->set_text($key_info->{media_size});
 
+    $self->say("Reading master key\n");
+
     pipe(my $rd, my $wr) or die "pipe(): $!";
     my $pid = fork();
     if($pid == 0) {  # In the child
@@ -439,12 +487,17 @@ sub start_master_read {
         $ENV{USB_BLOCK_DEVICE} = $key_info->{block_device};
         $ENV{USB_MOUNT_DIR}    = $self->mount_dir . "/$key_info->{dev}";
         $ENV{USB_MASTER_ROOT}  = $self->master_root;
+        mkpath($ENV{USB_MOUNT_DIR}) if not -d $ENV{USB_MOUNT_DIR};
         close($rd);
         close STDOUT;
         open STDOUT, '>&', $wr or die "error reopening STDOUT: $!";
         close STDERR;
         open STDERR, '>&', $wr or die "error reopening STDERR: $!";
-        exec($self->reader_script) or die "Error starting copy script: $!";
+        my $command = $self->sudo_wrap(
+            $self->reader_script,
+            qw(USB_BLOCK_DEVICE USB_MOUNT_DIR USB_MASTER_ROOT),
+        );
+        exec($command) or die "Error starting reader script: $!";
         exit; # never reached;
     }
     close($wr);
@@ -518,7 +571,11 @@ sub fork_copier {
         open STDOUT, '>&', $wr or die "error reopening STDOUT: $!";
         close STDERR;
         open STDERR, '>&', $wr or die "error reopening STDERR: $!";
-        exec($self->writer_script) or die "Error starting copy script: $!";
+        my $command = $self->sudo_wrap(
+            $self->writer_script,
+            qw(USB_BLOCK_DEVICE USB_MOUNT_DIR USB_MASTER_ROOT USB_VOLUME_NAME),
+        );
+        exec($command) or die "Error starting copy script: $!";
         exit; # never reached;
     }
     close($wr);
@@ -875,7 +932,8 @@ sub get_volume_label {
     my($self, $device) = @_;
 
     $device .= '1';  # examine first partition
-    my $label = `dosfslabel $device 2>/dev/null`;
+    my $command = $self->sudo_wrap("dosfslabel $device");
+    my $label = `$command 2>/dev/null`;
     chomp($label) if defined $label;
     return $label;
 }
@@ -980,6 +1038,10 @@ sub clean_temp_dir {
 
     my $path = $self->master_root or return;
     $path =~ s{/master$}{};
+    if(-d $path  and  $self->sudo_path) {
+        my $command = $self->sudo_wrap("chown -R $< $path");
+        system($command);
+    }
     rmtree($path) if -d $path;
 }
 
@@ -1094,6 +1156,12 @@ scripts.
 
 Pathname of the currently selected sound file, to be played when copying is
 complete.
+
+=item sudo_path
+
+If the user specified the C<--use-sudo> option, this string will be populated
+with the pathname of either C<gksudo> or C<sudo>.  When running the read/writer
+scripts the string will be prepended onto the commands.
 
 =item temp_root
 
@@ -1231,6 +1299,9 @@ Called from the C<run> method immediately before the application exits.  This
 method is responsible for removing the temporary directories containing the
 master copy of the files and the mount points for the blank keys.
 
+When running as a non-root user, this method needs to use sudo in order to
+remove the files created by the reader script when it was running as root.
+
 =head2 commandline_options ( )
 
 This B<class> method returns a list of recognised options in the form expected
@@ -1264,6 +1335,12 @@ entry widgets on the device filter toolbar.
 
 This method is called from C<require_master_key> to enable the menu and text
 entry widgets on the device filter toolbar.
+
+=head2 find_command ( command )
+
+Takes a command name and returns the path to the first matching executable file
+found in a directory listed in the $PATH environment variable.  Returns
+C<undef> if no match found.
 
 =head2 fork_copier ( key_info )
 
@@ -1343,6 +1420,11 @@ Handler for the Help E<gt> About menu item.  Displays 'About' dialog.
 This method takes a pathname to a sound file (e.g.: a .wav) and plays it.
 The current implementation simply runs the the SOX C<play> command - it should probably use GStreamer
 
+=head2 process_options ( options )
+
+Takes a reference to the hash of options returned by L<Getopt::Long>.  Sets up
+internal attributes based on the values provided.
+
 =head2 reader_script ( )
 
 Returns the path to the script from the currently selected profile, which will
@@ -1396,6 +1478,16 @@ the user.
 
 Called from C<hal_device_added> to fork off a 'reader' process to slurp in the
 contents of the master key.
+
+=head2 sudo_wrap ( command env-var-names )
+
+If the user specified the C<--use-sudo> option and sudo is installed, this
+method will return a command string which wraps the supplied command in a
+call to either C<gksudo> or C<sudo>.
+
+The C<gksudo> command is preferred since it gives the user a GUI prompt window
+if it is necessary to prompt for a password.  This method handles the different
+semantics required to pass environment variables through C<gksudo> and C<sudo>.
 
 =head2 tick ( )
 
