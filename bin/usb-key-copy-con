@@ -85,18 +85,13 @@ blank keys.  See L<App::USBKeyCopyCon> for more details.
 
 =head2 Desktop Media Automount
 
-The GNOME desktop environment (and probably others) will try to automatically
-mount any USB storage device when it is plugged in.  This program is also
-mounting and unmounting filesystems so things can get a bit confused.  You
-probably want to disable this feature in your desktop environment before
-running this program.
+While this program is running, it attempts to disable the GNOME desktop
+environment's media automount behaviour - which would intefere with the copying
+process.  If you're not running GNOME you may need to manually disable the
+equivalent function in your desktop of choice.
 
-To disable automount in GNOME, run this command:
-
-  gconftool-2 --type bool --set \
-    /apps/nautilus/preferences/media_automount false
-
-and to enable it again, use this command:
+On exit, the original state of the media automount function should be restored.
+In the event of a crash, you can turn it back on with this command:
 
   gconftool-2 --type bool --set \
     /apps/nautilus/preferences/media_automount true

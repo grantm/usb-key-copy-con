@@ -3,6 +3,3 @@
   - select a sound file (+ test button)
   - verbose console output
 
-- disable desktop automount on startup
-- re-enable desktop automount on shutdown
-

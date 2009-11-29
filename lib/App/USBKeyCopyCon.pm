@@ -98,6 +98,7 @@ has 'master_info'      => ( is => 'rw' );
 has 'options'          => ( is => 'rw', default => sub { {} } );
 has 'profiles'         => ( is => 'rw', default => sub { {} } );
 has 'selected_profile' => ( is => 'rw', isa => 'Str',  default => '' );
+has 'automount_state'  => ( is => 'rw', isa => 'Str',  default => undef );
 has 'temp_root'        => ( is => 'rw', isa => 'Str',  default => undef );
 has 'master_root'      => ( is => 'rw', isa => 'Str',  default => undef );
 has 'mount_dir'        => ( is => 'rw', isa => 'Str',  default => undef );
@@ -152,6 +153,8 @@ my %hal_key_map = (
     'linux.sysfs_path'             => 'sysfs_path',
 );
 
+my $gconf_automount_path = '/apps/nautilus/preferences/media_automount';
+
 use constant VENDOR_EXACT      => 0;
 use constant VENDOR_PATTERN    => 1;
 use constant VENDOR_ANY        => 2;
@@ -167,6 +170,7 @@ sub BUILD {
     $self->set_temp_root('/tmp');
     $self->scan_for_profiles;
     $self->select_profile;
+    $self->disable_automount;
 
     my($path) = __FILE__ =~ m{^(.*)[.]pm$};
     $path = File::Spec->rel2abs($path) . "/copy-complete.wav";
@@ -283,6 +287,27 @@ sub check_for_root_user {
     }
 
     die "You must either run this program as root or install sudo\n";
+}
+
+
+sub disable_automount {
+    my $self = shift;
+
+    my $state = `gconftool-2 --get $gconf_automount_path 2>/dev/null`;
+    return if !defined($state) or $? != 0;
+
+    chomp($state);
+    $self->automount_state($state);
+    system("gconftool-2 --type bool --set $gconf_automount_path false 2>/dev/null");
+}
+
+
+sub restore_automount {
+    my $self = shift;
+
+    my $state = $self->automount_state or return;
+    system("gconftool-2 --type bool --set $gconf_automount_path $state 2>/dev/null");
+
 }
 
 
@@ -582,6 +607,7 @@ sub fork_copier {
     $key_info->{pid}    = $pid;
     $key_info->{fh}     = $rd;
     $key_info->{output} = '';
+    $key_info->{status} = 0;
 }
 
 
@@ -1061,6 +1087,7 @@ sub run {
 
     Gtk2->main;
 
+    $self->restore_automount;
     $self->clean_temp_dir;
 }
 
@@ -1079,6 +1106,12 @@ accessor methods):
 =item app_win
 
 The main Gtk2::Window object.
+
+=item automount_state
+
+Stores the enabled state ('true' or 'false') of the GNOME/Nautilus media
+automount option.  The function will be disabled on startup and this value will
+be restored on exit.
 
 =item capacity_combo
 
@@ -1329,6 +1362,13 @@ passed to the C<start_master_read> method.
 Called when a 'writer' process exits.  Checks the exit status and updates the
 icon in the key rack (0 = success, non-zero = failure).
 
+=head2 disable_automount ( )
+
+This method is called at startup to query GConf for the current GNOME/Nautilus
+media automount status ('true'/'false' for enabled/disabled).  The current
+state is saved and then the value is set to false.  The operation should fail
+silently in non-GNOME environments.
+
 =head2 disable_filter_inputs ( )
 
 This method is called from C<require_master_key> to disable the menu and text
@@ -1445,6 +1485,11 @@ to the USB key which has just been removed.
 Called from the constructor to put the app in the C<MASTER-WAIT> mode (waiting
 for the master key to be inserted).  Can also be called from the
 C<on_menu_file_new> menu event handler.
+
+=head2 restore_automount ( )
+
+This method is called at exit time restore the original GConf setting for the
+GNOME/Nautilus media automount function.
 
 =head2 run ( )
 
