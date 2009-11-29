@@ -1,3 +1,9 @@
+libapp-usbkeycopycon-perl (1.01-1) jaunty; urgency=low
+
+  * new upstream release
+
+ -- Grant McLean <grant@mclean.net.nz>  Sun, 29 Nov 2009 16:55:48 +1300
+
 libapp-usbkeycopycon-perl (1.00-1) unstable; urgency=low
 
   * Initial Release.
