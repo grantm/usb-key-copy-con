@@ -1,4 +1,3 @@
-- fix scrolling
 - implement Edit > Preferences
   - enable/disable sounds
   - select a sound file (+ test button)

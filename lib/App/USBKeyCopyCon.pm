@@ -795,6 +795,13 @@ sub build_console {
     $console->set_cursor_visible(FALSE);
     $console->set_wrap_mode('char');
 
+    my $end_mark = $buffer->create_mark( 'end', $buffer->get_end_iter, FALSE);
+    $buffer->signal_connect(
+        insert_text => sub {
+            $console->scroll_to_mark( $end_mark, 0.0, TRUE, 0.0, 0.0 );
+        }
+    );
+
     $self->console($console);
 
     $scrolled_window->add($console);
@@ -810,8 +817,6 @@ sub say {
     my $buffer = $console->get_buffer;
     my $end = $buffer->get_end_iter;
     $buffer->insert ($end, $msg);
-    $end = $buffer->get_end_iter;
-    $console->scroll_to_iter($end, 0, 0, 0, 0);
 }
 
 
