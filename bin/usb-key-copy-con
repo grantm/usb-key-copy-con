@@ -119,7 +119,7 @@ profile name is 'copyfiles'.
 If your custom scripts are in a non-standard directory, use this option to add
 that directory to the list which will be scanned for profile scripts.
 
-=item B<<--help>> (alias -?)
+=item B<< --help >> (alias -?)
 
 Display this documentation.
 
