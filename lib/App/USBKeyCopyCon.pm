@@ -17,7 +17,7 @@ our $VERSION = '1.01';
 To launch the GUI application that this module implements, simply run the
 supplied wrapper script:
 
-  sudo usb-key-copy-con
+  usb-key-copy-con
 
 =head1 DESCRIPTION
 
@@ -163,7 +163,6 @@ use constant CAPACITY_ANY      => 2;
 sub BUILD {
     my $self = shift;
 
-    $self->process_options($self->options);
     $self->check_for_root_user;
     $self->set_temp_root('/tmp');
     $self->scan_for_profiles;
@@ -178,19 +177,6 @@ sub BUILD {
     $self->init_dbus_watcher;
 
     $self->require_master_key;
-}
-
-
-sub process_options {
-    my($self, $opt) = @_;
-
-    if($opt->{'use-sudo'}) {
-        my $path = $self->find_command('gksudo') || $self->find_command('sudo');
-        if($path) {
-            $self->sudo_path($path);
-            $opt->{'no-root-check'} = 1;
-        }
-    }
 }
 
 
@@ -225,7 +211,6 @@ sub commandline_options {
     my $class = shift;
     return(
         'help|?',
-        '--use-sudo|s',
         '--no-root-check|n',
         '--profile|p=s',
         '--profile-dir|d=s'
@@ -289,7 +274,15 @@ sub check_for_root_user {
 
     return if $self->options->{'no-root-check'};
 
-    die "This program must be run as root\n" if $> != 0;
+    return if $> == 0;
+
+    my $path = $self->find_command('gksudo') || $self->find_command('sudo');
+    if($path) {
+        $self->sudo_path($path);
+        return;
+    }
+
+    die "You must either run this program as root or install sudo\n";
 }
 
 
@@ -1165,9 +1158,9 @@ complete.
 
 =item sudo_path
 
-If the user specified the C<--use-sudo> option, this string will be populated
-with the pathname of either C<gksudo> or C<sudo>.  When running the read/writer
-scripts the string will be prepended onto the commands.
+If the script was run by a non-root user and sudo is available, this string
+will be populated with the pathname of either C<gksudo> or C<sudo>.  When
+running the read/writer scripts the string will be prepended onto the commands.
 
 =item temp_root
 
@@ -1295,9 +1288,13 @@ it with Gtk widgets.
 
 =head2 check_for_root_user ( )
 
-Called on startup.  If the script is not running with root permissions and the
-C<--no-root-check> option was not specified, this method will die with an
-appropriate error message.
+Called on startup to check that either the script is running as root or that sudo
+is available.  In the latter case, sudo (or gksudo) will be used to invoke the
+read/writer scripts.
+
+If the script is not running with root permissions; and sudo is not available;
+and the C<--no-root-check> option was not specified, this method will die with
+an appropriate error message.
 
 =head2 clean_temp_dir ( )
 
@@ -1426,11 +1423,6 @@ Handler for the Help E<gt> About menu item.  Displays 'About' dialog.
 This method takes a pathname to a sound file (e.g.: a .wav) and plays it.
 The current implementation simply runs the the SOX C<play> command - it should probably use GStreamer
 
-=head2 process_options ( options )
-
-Takes a reference to the hash of options returned by L<Getopt::Long>.  Sets up
-internal attributes based on the values provided.
-
 =head2 reader_script ( )
 
 Returns the path to the script from the currently selected profile, which will
@@ -1487,9 +1479,10 @@ contents of the master key.
 
 =head2 sudo_wrap ( command env-var-names )
 
-If the user specified the C<--use-sudo> option and sudo is installed, this
-method will return a command string which wraps the supplied command in a
-call to either C<gksudo> or C<sudo>.
+If the script is run by a non-root user and sudo is available and the
+C<--no-root-check> option was not specified, this method will return a command
+string which wraps the supplied command in a call to either C<gksudo> or
+C<sudo>.  For all other cases, C<command> is returned unmodified.
 
 The C<gksudo> command is preferred since it gives the user a GUI prompt window
 if it is necessary to prompt for a password.  This method handles the different

@@ -37,7 +37,6 @@ usb-key-copy-con - GUI console for copying USB flash drives
 
   Options:
 
-   --use-sudo|s            run as non-root user with sudo called as needed
    --no-root-check|n       skip the check for root permissions
    --profile|p <name>      specify the copying profile
    --profile-dir|d <path>  directory where custom profile scripts live
@@ -107,19 +106,13 @@ and to enable it again, use this command:
 
 =over 4
 
-=item B<--use-sudo> (alias: -s)
-
-This option allows the application to run as a non-root user with sudo
-being used automatically to run commands requiring admin privileges.
-
-Specifying this option implicitly sets the C<--no-root-check> option.
-
 =item B<--no-root-check> (alias: -n)
 
-Normally the application will refuse to run unless it is executed with root
-permissions.  Use this option to skip this check.  With the default profile
-failure will occur later when attempting to mount filesystems but the option
-may be useful with a custom profile or with an appropriate sudo setup.
+Normally the application will refuse to run unless either it is executed with
+root permissions or sudo (or gksudo) is available.  Use this option to skip
+this check.  With the default profile failure will occur later when attempting
+to mount filesystems but the option may be useful with a custom profile or with
+an appropriate sudo setup.
 
 =item B<< --profile <name> >>  (alias: -p)
 

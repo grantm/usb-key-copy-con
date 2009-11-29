@@ -1,6 +1,7 @@
 Revision history for App-USBKeyCopyCon
 
 1.01  2009-??-??
+      - use (gk)sudo for running sub-commands if not running as root
       - add command-line option parsing:
           --no-root-check to skip the check for root permissions
           --profile-dir   to specify location of custom profile scripts
