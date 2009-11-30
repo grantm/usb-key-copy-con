@@ -11,6 +11,10 @@ clean:
 install: install-stamp
 install-stamp: build-stamp
 	dh install
+	install -d debian/libapp-usbkeycopycon-perl/usr/share/applications
+	install -m644 debian/usb-key-copy-con.desktop debian/libapp-usbkeycopycon-perl/usr/share/applications/usb-key-copy-con.desktop
+	install -d debian/libapp-usbkeycopycon-perl/usr/share/pixmaps
+	install -m644 debian/usb-key-copy-con.xpm debian/libapp-usbkeycopycon-perl/usr/share/pixmaps/usb-key-copy-con.xpm
 	touch $@
 
 binary-arch:

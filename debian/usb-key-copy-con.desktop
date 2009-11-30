@@ -1,0 +1,12 @@
+#!/usr/bin/env xdg-open
+
+[Desktop Entry]
+Name=USB Key Copy Console
+GenericName=USB Key Copier
+Comment=Bulk Copying of USB Flash Drives
+Exec=usb-key-copy-con
+Icon=usb-key-copy-con
+Terminal=false
+Type=Application
+Categories=Utility;Archiving;
+Name[en]=USB Key Copy Console
