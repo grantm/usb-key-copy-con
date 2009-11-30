@@ -2,6 +2,7 @@
 Makefile$
 ^[.]git
 ^debian\b
+^img_src\b
 ^blib\b
 ^(build|install)-stamp$
 ^pm_to_blib$
