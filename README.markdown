@@ -58,7 +58,7 @@ Documentation
 -------------
 
 The documentation is included in the source modules and script.  You can read
-it online at: [http://search.cpan.org/dist/App-USBKeyCopyCon/][1].
+it online at: [http://search.cpan.org/dist/App-USBKeyCopyCon/][2].
 
 The 'usb-key-copy-con' command also supports a `--help` option.
 
