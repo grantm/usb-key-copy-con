@@ -62,7 +62,7 @@ echo "{5/${STEPS}}"
 
 # Check the file contents
 cd ${USB_MOUNT_DIR}
-COPY_SUM="$(find . -type f | sort | xargs md5sum | md5sum - | awk '{print $1}')"
+COPY_SUM="$(find . -type f -print0 | xargs -0 md5sum | sort | md5sum - | awk '{print $1}')"
 cd /
 
 ORIG_SUM="$(cat ${USB_MASTER_ROOT}.md5sum)"

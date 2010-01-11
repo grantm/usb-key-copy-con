@@ -44,10 +44,10 @@ cp -r ${USB_MOUNT_DIR}/. ${USB_MASTER_ROOT}
 sleep 1
 echo "Verifying copied files ..."
 cd ${USB_MOUNT_DIR}
-ORIG_SUM="$(find . -type f | sort | xargs md5sum | md5sum - | awk '{print $1}')"
+ORIG_SUM="$(find . -type f -print0 | xargs -0 md5sum | sort | md5sum - | awk '{print $1}')"
 
 cd ${USB_MASTER_ROOT}
-COPY_SUM="$(find . -type f | sort | xargs md5sum | md5sum - | awk '{print $1}')"
+COPY_SUM="$(find . -type f -print0 | xargs -0 md5sum | sort | md5sum - | awk '{print $1}')"
 
 test "$ORIG_SUM" = "$COPY_SUM" || die "Checksum of copied files does not match"
 
