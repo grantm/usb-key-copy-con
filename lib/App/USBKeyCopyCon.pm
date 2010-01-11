@@ -9,7 +9,7 @@ App::USBKeyCopyCon - GUI console for bulk copying of USB keys
 
 =cut
 
-our $VERSION = '1.01';
+our $VERSION = '1.02';
 
 
 =head1 SYNOPSIS

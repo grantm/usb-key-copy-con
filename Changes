@@ -1,5 +1,9 @@
 Revision history for App-USBKeyCopyCon
 
+1.02  2010-01-11
+      - update default profile scripts to support filenames with spaces
+        (reported by Andrew McMillan)
+
 1.01  2009-11-29
       - use (gk)sudo for running sub-commands if not running as root
       - disable/restore GNOME/Nautilus media automount while running
