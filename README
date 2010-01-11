@@ -16,6 +16,11 @@ To install this module, run the following commands:
     make test
     make install
 
+For instructions on building/installing a packaged version on Debian/Ubuntu,
+see the 'Installation' section on this page:
+
+  http://github.com/grantm/usb-key-copy-con
+
 SUPPORT AND DOCUMENTATION
 
 After installing, you can find documentation for this module with the
