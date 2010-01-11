@@ -47,7 +47,7 @@ build a .deb package and install that.  First install the dependencies:
 Then build/install one Perl dependency that's not already packaged in Debian:
 
     sudo apt-get install dh-make-perl libdbus-glib-1-dev
-    dh-make-perl --install --cpan App::USBKeyCopyCon
+    dh-make-perl --install --cpan Net::DBus::GLib
 
 Finally, build/install the application itself:
 
